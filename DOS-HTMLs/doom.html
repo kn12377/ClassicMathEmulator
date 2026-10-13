@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Emulatrix - Play Retro Games Online</title>
+    <meta property="og:title" content="Emulatrix">
+    <meta property="og:url" content="https://www.emulatrix.com">
+    <meta property="og:description" content="Play Retro Games Online">
+    <meta property="og:image" content="https://www.emulatrix.com/EmulatrixShare.png">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Emulatrix">
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta
+      name="description"
+      content="JavaScript Emulator. Sega Genesis, 32x, Nintendo, Super Nintendo, GameBoy, GameBoy Color, GameBoy Advance, MAME and DOSBox."
+    >
+    <meta
+      name="keywords"
+      content="emulator, abandonware, games, sega, genesis, 32x, nintendo, super, gameboy, color, advance, mame, mame, arcade, dos, dosbox, javascript, emscripten, online, free, open, source"
+    >
+    <link rel="manifest" href="Emulatrix.json">
+    <link rel="icon" sizes="16x16" type="image/svg+xml" href="EmulatrixFavIcon.svg">
+    <link
+      rel="icon"
+      sizes="192x192"
+      type="image/svg+xml"
+      href="EmulatrixFavIcon.svg"
+    >
+    <link
+      rel="apple-touch-icon"
+      href=""
+    >
+    <link
+      rel="apple-touch-startup-image"
+      href=""
+    >
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    >
+    <style>
+      html,body{background-color:black;height:100%;padding:0;margin:0;overflow:hidden}
+      #content{position:fixed;height:100%;width:100%;margin:0;padding:0;border:none;display:none}
+
+      @media only screen and (orientation:portrait) {
+        #content{position:fixed;transform:rotate(-90deg);transform-origin:left top;width:100vh;overflow-x:hidden;top:100%;left:0}
+      }
+    </style>
+  </head>
+  <body>
+    <iframe id="content" src="about:blank"></iframe>
+    <script>
+      function resizeContent() {
+        var w = window.innerWidth
+        var h = window.innerHeight
+
+        if (window.innerHeight > window.innerWidth) {
+          document.getElementById("content").style.width = h + "px"
+          document.getElementById("content").style.height = w + "px"
+        } else {
+          document.getElementById("content").style.width = w + "px"
+          document.getElementById("content").style.height = h + "px"
+        }
+      }
+
+      var supportsOrientationChange = "onorientationchange" in window
+      var orientationEvent = supportsOrientationChange
+        ? "orientationchange"
+        : "resize"
+
+      window.addEventListener(
+        orientationEvent,
+        function () {
+          resizeContent()
+        },
+        false
+      )
+
+      window.addEventListener("resize", function () {
+        resizeContent()
+      })
+
+      window.addEventListener("load", function () {
+        if (window.top === window.self) {
+          resizeContent()
+
+          setInterval(function () {
+            if (document.activeElement !== document.getElementById("content")) {
+              document.getElementById("content").focus()
+            }
+          }, 250)
+
+          var titleUpdater = setInterval(function () {
+            try {
+              if (
+                document
+                  .getElementById("content")
+                  .contentDocument.querySelector("canvas")
+              ) {
+                document.title = "Emulatrix"
+                clearInterval(titleUpdater)
+              }
+            } catch (err) {
+              //
+            }
+          }, 250)
+
+          var preselectedFile = "https://kn12377.github.io/ClassicMathEmulator/DOS-Roms/DOOM.ZIP"
+          document.getElementById("content").src =
+            "Emulatrix.htm?file=" + encodeURIComponent(preselectedFile)
+
+          document.getElementById("content").style.display = "block"
+        }
+      })
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("worker.js")
+          .then(function () {
+            // Registration successful
+          })
+          .catch(function () {
+            // Registration failed
+          })
+      }
+    </script>
+  </body>
