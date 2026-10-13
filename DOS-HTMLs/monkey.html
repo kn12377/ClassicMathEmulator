@@ -1,0 +1,78 @@
+<script>
+  (function () {
+    // Set this to a ROM you want to auto-load.
+    // Example: "https://example.com/roms/sonic.zip"
+    var PRESELECTED_URL = "https://kn12377.github.io/ClassicMathEmulator/DOS-Roms/DOOM.ZIP"
+
+    // Optional: override the filename shown to the emulator
+    // If blank, it will use the URL filename
+    var PRESELECTED_NAME = ""
+
+    function getParam(name) {
+      try {
+        var params = new URLSearchParams(window.location.search)
+        return params.get(name)
+      } catch (e) {
+        return null
+      }
+    }
+
+    function autoLoadRom(url, fileName) {
+      if (!url) {
+        console.info("Auto-load disabled: no ROM URL configured.")
+        return
+      }
+
+      console.info("Auto-loading ROM:", url)
+
+      fetch(url, { mode: "cors" })
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("HTTP " + response.status + " while fetching ROM")
+          }
+          return response.arrayBuffer()
+        })
+        .then(function (buffer) {
+          var name = (fileName && fileName.trim()) || url.split("/").pop() || "game.bin"
+          var file = new File([buffer], name, { type: "application/octet-stream" })
+
+          if (typeof window.runEmulator !== "function") {
+            throw new Error("runEmulator is not available yet")
+          }
+
+          console.info("Calling runEmulator with:", name)
+          window.runEmulator(file)
+        })
+        .catch(function (err) {
+          console.error("Auto-load failed:", err)
+
+          if (typeof window.alertCustom === "function") {
+            window.alertCustom("Auto-load error", "Unable to load the selected ROM:\n" + err.message, "OK")
+          } else {
+            alert("Unable to load the selected ROM:\n" + err.message)
+          }
+        })
+    }
+
+    window.addEventListener("load", function () {
+      var romUrl = getParam("rom") || PRESELECTED_URL
+      var romName = getParam("name") || PRESELECTED_NAME
+
+      // Don't do anything if no URL was configured
+      if (!romUrl) {
+        console.info("No preselected ROM URL found. Use ?rom=... or set PRESELECTED_URL.")
+        return
+      }
+
+      function tryStart() {
+        if (typeof window.runEmulator === "function") {
+          autoLoadRom(romUrl, romName)
+        } else {
+          setTimeout(tryStart, 150)
+        }
+      }
+
+      tryStart()
+    })
+  })()
+</script>
