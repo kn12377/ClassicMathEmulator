@@ -12,13 +12,23 @@
         background: #000;
         overflow: hidden;
       }
+
       iframe {
         width: 100vw;
         height: 100vh;
         border: 0;
         display: block;
         background: #000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
       }
+
+      iframe.ready {
+        opacity: 1;
+        visibility: visible;
+      }
+
       .loader {
         position: fixed;
         left: 50%;
@@ -51,19 +61,47 @@
           if (loader) loader.textContent = text
         }
 
+        function hideStartScreen(win) {
+          try {
+            var doc = win.document
+            if (!doc) return
+
+            var menu = doc.querySelector(".container")
+            if (menu) menu.style.display = "none"
+
+            var loader = doc.querySelector(".pleasewait")
+            if (loader) loader.style.display = "block"
+          } catch (err) {
+            // ignore timing issues while the page is still initializing
+          }
+        }
+
+        function revealStarted(win) {
+          try {
+            var doc = win.document
+            if (!doc) return
+            var loader = doc.querySelector(".pleasewait")
+            if (loader) loader.style.display = "none"
+          } catch (err) {
+            // ignore
+          }
+        }
+
         function tryInject() {
           var frame = document.getElementById("emulatorFrame")
           if (!frame || !frame.contentWindow) {
-            setTimeout(tryInject, 200)
+            setTimeout(tryInject, 150)
             return
           }
 
           var win = frame.contentWindow
+
           if (typeof win.runEmulator !== "function") {
-            setTimeout(tryInject, 200)
+            setTimeout(tryInject, 150)
             return
           }
 
+          hideStartScreen(win)
           setStatus("Loading DOS game: " + romName)
 
           fetch(romUrl, { mode: "cors" })
@@ -78,8 +116,15 @@
                 type: "application/octet-stream"
               })
 
+              setStatus("Launching game...")
               win.runEmulator(file)
-              setStatus("Game launched")
+
+              // The emulator's DOS callback does not currently hide the loader overlay.
+              // We hide it immediately after launch so the menu does not linger.
+              setTimeout(function () {
+                revealStarted(win)
+                frame.classList.add("ready")
+              }, 250)
             })
             .catch(function (err) {
               console.error("Auto-load failed:", err)
@@ -89,6 +134,7 @@
         }
 
         window.addEventListener("load", function () {
+          setStatus("Loading emulator...")
           setTimeout(tryInject, 1000)
         })
       })()
