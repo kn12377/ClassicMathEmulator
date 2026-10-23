@@ -43,6 +43,7 @@
         padding: 10px 14px;
         z-index: 10;
         pointer-events: none;
+        display: none;
       }
     </style>
   </head>
@@ -102,7 +103,6 @@
           }
 
           hideStartScreen(win)
-          setStatus("Loading DOS game: " + romName)
 
           fetch(romUrl, { mode: "cors" })
             .then(function (response) {
@@ -116,11 +116,8 @@
                 type: "application/octet-stream"
               })
 
-              setStatus("Launching game...")
               win.runEmulator(file)
 
-              // The emulator's DOS callback does not currently hide the loader overlay.
-              // We hide it immediately after launch so the menu does not linger.
               setTimeout(function () {
                 revealStarted(win)
                 frame.classList.add("ready")
@@ -128,13 +125,11 @@
             })
             .catch(function (err) {
               console.error("Auto-load failed:", err)
-              setStatus("Auto-load failed: " + err.message)
               alert("Unable to auto-load DOS game:\n" + err.message)
             })
         }
 
         window.addEventListener("load", function () {
-          setStatus("Loading emulator...")
           setTimeout(tryInject, 1000)
         })
       })()
