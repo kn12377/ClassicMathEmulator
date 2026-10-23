@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Emulatrix Auto-Load</title>
+    <style>
+      html, body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+      }
+      iframe {
+        width: 100vw;
+        height: 100vh;
+        border: 0;
+        display: block;
+        background: #000;
+      }
+      .loader {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        background: rgba(0, 0, 0, 0.55);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 8px;
+        padding: 10px 14px;
+        z-index: 10;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="loader" id="loader">Loading emulator...</div>
+    <iframe id="emulatorFrame" src="Emulatrix.htm"></iframe>
+
+    <script>
+      (function () {
+        var params = new URLSearchParams(window.location.search)
+        var romUrl = params.get("rom") || "https://kn12377.github.io/ClassicMathEmulator/DOS-Roms/DOOM.ZIP"
+        var romName = params.get("name") || "DOOM.ZIP"
+
+        function setStatus(text) {
+          var loader = document.getElementById("loader")
+          if (loader) loader.textContent = text
+        }
+
+        function tryInject() {
+          var frame = document.getElementById("emulatorFrame")
+          if (!frame || !frame.contentWindow) {
+            setTimeout(tryInject, 200)
+            return
+          }
+
+          var win = frame.contentWindow
+          if (typeof win.runEmulator !== "function") {
+            setTimeout(tryInject, 200)
+            return
+          }
+
+          setStatus("Loading DOS game: " + romName)
+
+          fetch(romUrl, { mode: "cors" })
+            .then(function (response) {
+              if (!response.ok) {
+                throw new Error("HTTP " + response.status + " while fetching ROM")
+              }
+              return response.arrayBuffer()
+            })
+            .then(function (buffer) {
+              var file = new File([buffer], romName, {
+                type: "application/octet-stream"
+              })
+
+              win.runEmulator(file)
+              setStatus("Game launched")
+            })
+            .catch(function (err) {
+              console.error("Auto-load failed:", err)
+              setStatus("Auto-load failed: " + err.message)
+              alert("Unable to auto-load DOS game:\n" + err.message)
+            })
+        }
+
+        window.addEventListener("load", function () {
+          setTimeout(tryInject, 1000)
+        })
+      })()
+    </script>
+  </body>
+</html>
