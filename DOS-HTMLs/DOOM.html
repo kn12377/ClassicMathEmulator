@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auto-Load DOS Game</title>
+    <style>
+      body {
+        margin: 0;
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        background: #0b1020;
+        color: #fff;
+        font-family: Arial, sans-serif;
+      }
+      .panel {
+        width: min(700px, 90vw);
+        background: #121a2a;
+        border: 1px solid #2a3a52;
+        border-radius: 12px;
+        padding: 24px;
+      }
+      #status {
+        margin-top: 12px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: #1e2d45;
+        border: 1px solid #3e5376;
+      }
+      #status.error { background: #2a1418; border-color: #7a2d36; }
+      #status.success { background: #122a1a; border-color: #2e6d52; }
+    </style>
+  </head>
+  <body>
+    <div class="panel">
+      <h1>Auto-Load DOS Game</h1>
+      <p>Loads a DOS game automatically when the emulator is ready.</p>
+      <div id="status">Preparing emulator...</div>
+    </div>
+
+    <script>
+      (function () {
+        var DEFAULT_ROM_URL = "https://kn12377.github.io/ClassicMathEmulator/DOS-Roms/DOOM.ZIP";
+        var DEFAULT_ROM_NAME = "DOOM.ZIP";
+
+        function setStatus(message, mode) {
+          var el = document.getElementById("status");
+          if (!el) return;
+          el.textContent = message;
+          el.className = mode || "";
+        }
+
+        function getParam(name) {
+          try {
+            var params = new URLSearchParams(window.location.search);
+            return params.get(name);
+          } catch (e) {
+            return null;
+          }
+        }
+
+        function autoLoadRom(url, fileName) {
+          if (!url) {
+            setStatus("No ROM URL configured.", "");
+            return;
+          }
+
+          setStatus("Fetching game: " + url);
+
+          fetch(url, { mode: "cors" })
+            .then(function (response) {
+              if (!response.ok) throw new Error("HTTP " + response.status + " while fetching ROM");
+              return response.arrayBuffer();
+            })
+            .then(function (buffer) {
+              var name = (fileName && fileName.trim()) || url.split("/").pop() || "game.zip";
+              var file = new File([buffer], name, { type: "application/octet-stream" });
+
+              function tryRun() {
+                if (typeof window.runEmulator !== "function") {
+                  setTimeout(tryRun, 150);
+                  return;
+                }
+
+                setStatus("Launching DOS game: " + name, "success");
+                window.runEmulator(file);
+              }
+
+              tryRun();
+            })
+            .catch(function (err) {
+              console.error("Auto-load failed:", err);
+              setStatus("Unable to load the selected ROM:\n" + err.message, "error");
+            });
+        }
+
+        function start() {
+          var romUrl = getParam("rom") || DEFAULT_ROM_URL;
+          var romName = getParam("name") || DEFAULT_ROM_NAME;
+
+          if (!romUrl) {
+            setStatus("No ROM URL provided. Set DEFAULT_ROM_URL or pass ?rom=...", "");
+            return;
+          }
+
+          autoLoadRom(romUrl, romName);
+        }
+
+        window.addEventListener("load", start);
+      })();
+    </script>
+  </body>
+</html>
